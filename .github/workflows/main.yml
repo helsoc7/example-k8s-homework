@@ -86,18 +86,19 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 400 ~/.ssh/id_rsa
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa
 
-      - name: Add SSH Key to Agent
+      - name: Start SSH agent
         run: |
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
 
-      - name: Disable SSH Strict Host Key Checking
+      - name: Add known_hosts
         run: |
-          echo "Host *\n\tStrictHostKeyChecking no\n\n" >> ~/.ssh/config
+          ssh-keyscan -H 18.195.204.185 >> ~/.ssh/known_hosts
 
       - name: Deploy Backend with Docker
         run: |
-          ssh -i ~/.ssh/id_rsa ec2-user@18.195.204.185 "sudo docker run -dp 3000:3000 ${{ secrets.IMAGE_NAME }}:${{ github.ref_name }}"
+          ssh -o StrictHostKeyChecking=no ec2-user@18.195.204.185 "sudo docker run -dp 3000:3000 ${{ secrets.IMAGE_NAME }}:${{ github.ref_name }}"

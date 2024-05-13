@@ -92,8 +92,13 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: False
         run: |
           echo "ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
       - name: Test SSH connection
-        run: ssh -vvv -i ${{ secrets.PRIVATE_KEY }} ec2-user@ec2-54-93-240-125.eu-central-1.compute.amazonaws.com
+        run: ssh -vvv -i ~/.ssh/id_rsa ec2-user@ec2-54-93-240-125.eu-central-1.compute.amazonaws.com
 
 
       - name: Set up Ansible environment

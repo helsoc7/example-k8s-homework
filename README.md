@@ -35,4 +35,30 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 ```
-3. 
+Wenn wir das Ganze dann mal in den Actions anschauen, sehen wir schon, dass dort ein frontend-dist-Artifakt erstellt wurde. Das ist schon mal ein guter Anfang.
+3. Frontend deployen
+Als nächstes wollen wir das Frontend deployen. Dafür deployen wir das Frontend auf ein S3 Bucket. Dafür müssen wir die AWS Credentials in den Secrets hinterlegen. Dafür gehen wir in die Settings des Repositories und klicken auf Secrets. Dort fügen wir dann die AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY und die AWS_SESSION_TOKEN hinzu.
+```
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: eu-central-1
+
+      - name: Deploy to S3
+        run: |
+          cd frontend/dist/frontend/browser
+          aws s3 cp . s3://${{ secrets.AWS_S3_BUCKET }}/ --recursive
+```

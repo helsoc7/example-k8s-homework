@@ -4,7 +4,7 @@ on: [push]
 
 env: 
   IMAGE_TAG: 3.0.0
-  IMAGE_NAME: k8s-application
+  IMAGE_NAME: helenhaveloh/k8s-application
 
 jobs:
   build-frontend:
@@ -74,6 +74,7 @@ jobs:
       - name: Build and push
         run: |
           docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} ./backend
+          docker images
           docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
   deploy-backend:

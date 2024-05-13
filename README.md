@@ -94,10 +94,30 @@ Als Letztes wollen wir das Backend deployen. Dafür verwenden wir die EC2-Instan
       - name: Set up Ansible environment
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          key: ${{ secrets.PRIVATE_KEY }}
+          key: ~/.ssh/id_rsa
           playbook: deploy_backend.yml
           inventory: hosts.ini
 ```
+
+Achtung: Wir müssen den SSH-Key erst speichern in dem Container des Jobs und die EC2-Instanz zu den known_hosts hinzufügen. Das machen wir mit folgendem Befehl:
+```
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa
+
+      - name: Start SSH agent
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Add known_hosts
+        run: |
+          ssh-keyscan -H 54.93.240.125 >> ~/.ssh/known_hosts
+```
+
 Wir müssen dazu natürlich noch das deploy_backend.yml und das hosts.ini erstellen. Das deploy_backend.yml sieht wie folgt aus:
 ```
 - hosts: all
@@ -125,3 +145,43 @@ Das hosts.ini sieht wie folgt aus:
 [backend-servers]
 <public-ip der EC2> ansible_user=ec2-user 
 ```
+###### ALTERNATIV: Mit ssh Connection auf EC2-Instanz und dann mit Docker starten
+```
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa
+
+      - name: Start SSH agent
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      - name: Add known_hosts
+        run: |
+          ssh-keyscan -H 54.93.240.125 >> ~/.ssh/known_hosts
+
+      
+
+      - name: Deploy Backend with Docker
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@54.93.240.125 "sudo docker run -dp 3000:3000 ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+```
+ACHTUNG: Hier müssen wir auf der EC2-Instanz aber docker installieren und den Docker-Daemon starten. Das machen wir mit folgenden Befehlen:
+```
+sudo yum install docker -y
+sudo service docker start
+```
+Außerdem muss der ec2-user dann noch die Berechtigungen haben, docker zu verwenden. 
+```
+sudo usermod -a -G docker ec2-user
+```
+Dann funktioniert es. 

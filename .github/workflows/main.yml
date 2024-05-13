@@ -99,6 +99,8 @@ jobs:
         run: |
           ssh-keyscan -H 54.93.240.125 >> ~/.ssh/known_hosts
 
+      
+
       - name: Deploy Backend with Docker
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@54.93.240.125 "sudo docker run -dp 3000:3000 ${{ secrets.IMAGE_NAME }}:${{ github.ref_name }}"
+          ssh -o StrictHostKeyChecking=no ec2-user@54.93.240.125 "sudo docker run -dp 3000:3000 ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"

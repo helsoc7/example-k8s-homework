@@ -83,10 +83,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
+      - name: Disable Host Key Checking
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+        run: |
+          echo "ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
+      - name: Test SSH connection
+        run: ssh -vvv -i ${{ secrets.PRIVATE_KEY }} ec2-user@ec2-54-93-240-125.eu-central-1.compute.amazonaws.com
+
 
       - name: Set up Ansible environment
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          key: ${{ secrets.PRIVATE_KEY }}
           playbook: deploy_backend.yml
           inventory: hosts.ini

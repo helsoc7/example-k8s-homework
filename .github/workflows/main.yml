@@ -2,6 +2,10 @@ name: Continuous Integration and Deployment
 
 on: [push]
 
+env: 
+  IMAGE_TAG: 3.0.0
+  IMAGE_NAME: k8s-application
+
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
@@ -54,3 +58,33 @@ jobs:
         run: |
           cd frontend/dist/frontend/browser
           aws s3 cp . s3://${{ secrets.AWS_S3_BUCKET }}/ --recursive
+
+
+  build_backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Build and push
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} ./backend
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Ansible environment
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          key: ${{ secrets.PRIVATE_KEY }}
+          playbook: deploy_backend.yml
+          inventory: hosts.ini

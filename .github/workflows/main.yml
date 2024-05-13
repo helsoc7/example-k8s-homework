@@ -23,3 +23,13 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+      - name: List output files
+        run: |
+          ls -la frontend/dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-dist
+          path: frontend/dist
